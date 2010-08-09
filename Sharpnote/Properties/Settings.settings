@@ -1,0 +1,27 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="Sharpnote.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="LoginPath" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">/api/login</Value>
+    </Setting>
+    <Setting Name="NotePath" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">/api/note</Value>
+    </Setting>
+    <Setting Name="DeletePath" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">/api/delete</Value>
+    </Setting>
+    <Setting Name="IndexPath" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">/api/index</Value>
+    </Setting>
+    <Setting Name="SearchPath" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">/api/search</Value>
+    </Setting>
+    <Setting Name="Domain" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">simple-note.appspot.com</Value>
+    </Setting>
+    <Setting Name="Scheme" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">https://</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
