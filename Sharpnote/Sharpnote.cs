@@ -39,20 +39,24 @@ namespace Sharpnote
         /// <returns></returns>
         public bool Login(string email, string password)
         {
-            StringParamCheck("email", email);
-            StringParamCheck("password", password);
-
-            var data = string.Format("email={0}&password={1}", email, password);
-            using (var resp = ProcessRequest(_settings.LoginPath, "POST", data))
+            try
             {
-                if (resp != null)
+                StringParamCheck("email", email);
+                StringParamCheck("password", password);
+
+                var data = string.Format("email={0}&password={1}", email, password);
+                using (var resp = ProcessRequest(_settings.LoginPath, "POST", data))
                 {
-                    _authToken = resp.Cookies["auth"].Value;
-                    _email = email;
-                    return true;
+                    if (resp != null)
+                    {
+                        _authToken = resp.Cookies["auth"].Value;
+                        _email = email;
+                        return true;
+                    }
+                    return false;
                 }
-                return false;
             }
+            catch (Exception) { throw; }
         }
 
         /// <summary>
@@ -62,17 +66,33 @@ namespace Sharpnote
         /// <returns></returns>
         public IEnumerable<T> FetchIndex<T>(bool getDeleted = false) where T : Interfaces.INote, new()
         {
-            CheckAuthKey();
-            using (var resp = ProcessRequest(_settings.IndexPath, "GET", queryParams: AuthQsParams))
+            try
             {
-                var jsonArr = JArray.Parse(ReadResponseContent(resp)).AsEnumerable();
-                if (getDeleted) jsonArr = jsonArr.Where(entry => !entry["deleted"].Value<bool>());
-                return jsonArr.Select(token => new T
-                                      {
-                                          Key = token["key"].Value<string>(),
-                                          Modified = token["modify"].Value<DateTime>()
-                                      });
+                CheckAuthKey();
+                using (var resp = ProcessRequest(_settings.IndexPath, "GET", queryParams: AuthQsParams))
+                {
+                    var jsonArr = JArray.Parse(ReadResponseContent(resp)).AsEnumerable();
+                    if (getDeleted) jsonArr = jsonArr.Where(entry => !entry["deleted"].Value<bool>());
+                    return jsonArr.Select(token => new T
+                                          {
+                                              Key = token["key"].Value<string>(),
+                                              Modified = token["modify"].Value<DateTime>()
+                                          });
+                }
             }
+            catch (WebException ex)
+            {
+                var resp = (HttpWebResponse)ex.Response;
+                switch (resp.StatusCode)
+                {
+                    //401
+                    case HttpStatusCode.Unauthorized:
+                        throw new SharpnoteAuthorisationException(ex);
+                    default:
+                        throw;
+                }
+            }
+            catch (Exception) { throw; }
         }
 
         /// <summary>
@@ -83,15 +103,36 @@ namespace Sharpnote
         /// <returns>A note of type T</returns>
         public T FetchFullNote<T>(string key) where T : Interfaces.INote, new()
         {
-            CheckAuthKey();
-            StringParamCheck("key", key);
-            var queryParams = string.Format("{0}&key={1}&encode=base64", AuthQsParams, key);
-            using (var resp = ProcessRequest(_settings.NotePath, "GET", queryParams: queryParams))
-            {                
-                return new T { Key = key, 
-                               Content = Decode(ReadResponseContent(resp)),
-                               Modified = DateTime.Parse(resp.GetResponseHeader("note-modifydate")),
-                               Created = DateTime.Parse(resp.GetResponseHeader("note-createdate"))};                
+            try
+            {
+                CheckAuthKey();
+                StringParamCheck("key", key);
+                var queryParams = string.Format("{0}&key={1}&encode=base64", AuthQsParams, key);
+                using (var resp = ProcessRequest(_settings.NotePath, "GET", queryParams: queryParams))
+                {
+                    return new T
+                    {
+                        Key = key,
+                        Content = Decode(ReadResponseContent(resp)),
+                        Modified = DateTime.Parse(resp.GetResponseHeader("note-modifydate")),
+                        Created = DateTime.Parse(resp.GetResponseHeader("note-createdate"))
+                    };
+                }
+            }
+            catch (WebException ex)
+            {
+                var resp = (HttpWebResponse)ex.Response;
+                switch (resp.StatusCode)
+                {
+                    //404
+                    case HttpStatusCode.NotFound:
+                        throw new SharpnoteNonExistentNoteException(key, ex);
+                    //401
+                    case HttpStatusCode.Unauthorized:
+                        throw new SharpnoteAuthorisationException(ex);
+                    default:
+                        throw;
+                }
             }
         }
 
@@ -106,24 +147,40 @@ namespace Sharpnote
         public Tuple<IEnumerable<T>, int> SearchNotes<T>(string query = null, int max = 10, int offset = 0) 
             where T : Interfaces.INote, new()
         {
-            CheckAuthKey();
-            if (max < 1) throw new System.ArgumentOutOfRangeException("max", max, "Value must be one or greater");
-            if (offset < 0) throw new System.ArgumentOutOfRangeException("offset", offset, "Value must be zero or greater");
-
-            var queryParams = string.Format("{0}&query={1}&results={2}&offset={3}", AuthQsParams, query, max, offset);
-            using (var resp = ProcessRequest(_settings.SearchPath, "GET", queryParams: queryParams))
+            try
             {
-                var jObj = JObject.Parse(ReadResponseContent(resp));
-                var total = jObj["Response"]["totalRecords"].Value<int>();
-                var notes = JArray.FromObject(jObj["Response"]["Results"])
-                                  .Select(token =>new T
-                                  {
-                                      Key = token["key"].Value<string>(),
-                                      Content = token["content"].Value<string>()
-                                  });
+                CheckAuthKey();
+                if (max < 1) throw new System.ArgumentOutOfRangeException("max", max, "Value must be one or greater");
+                if (offset < 0) throw new System.ArgumentOutOfRangeException("offset", offset, "Value must be zero or greater");
 
-                return new Tuple<IEnumerable<T>, int>(notes, total);
+                var queryParams = string.Format("{0}&query={1}&results={2}&offset={3}", AuthQsParams, query, max, offset);
+                using (var resp = ProcessRequest(_settings.SearchPath, "GET", queryParams: queryParams))
+                {
+                    var jObj = JObject.Parse(ReadResponseContent(resp));
+                    var total = jObj["Response"]["totalRecords"].Value<int>();
+                    var notes = JArray.FromObject(jObj["Response"]["Results"])
+                                      .Select(token => new T
+                                      {
+                                          Key = token["key"].Value<string>(),
+                                          Content = token["content"].Value<string>()
+                                      });
+
+                    return new Tuple<IEnumerable<T>, int>(notes, total);
+                }
             }
+            catch (WebException ex)
+            {
+                var resp = (HttpWebResponse)ex.Response;
+                switch (resp.StatusCode)
+                {
+                    //401
+                    case HttpStatusCode.Unauthorized:
+                        throw new SharpnoteAuthorisationException(ex);
+                    default:
+                        throw;
+                }
+            }
+            catch (Exception) { throw; }
         }
         
         /// <summary>
@@ -134,12 +191,31 @@ namespace Sharpnote
         /// <returns>The key of the note if successful</returns>
         public string SaveNote(string content, string key = null)
         {
-            CheckAuthKey();
-            var queryParams = string.IsNullOrEmpty(key) ? AuthQsParams : string.Format("{0}&key={1}", AuthQsParams, key);
-            using(var resp = ProcessRequest(_settings.NotePath, "POST", content, queryParams))
+            try
             {
-                return ReadResponseContent(resp);
+                CheckAuthKey();
+                var queryParams = string.IsNullOrEmpty(key) ? AuthQsParams : string.Format("{0}&key={1}", AuthQsParams, key);
+                using (var resp = ProcessRequest(_settings.NotePath, "POST", content, queryParams))
+                {
+                    return ReadResponseContent(resp);
+                }
             }
+            catch (WebException ex)
+            {
+                var resp = (HttpWebResponse)ex.Response;
+                switch (resp.StatusCode)
+                {
+                    //404
+                    case HttpStatusCode.NotFound:
+                        throw new SharpnoteNonExistentNoteException(key, ex);
+                    //401
+                    case HttpStatusCode.Unauthorized:
+                        throw new SharpnoteAuthorisationException(ex);
+                    default:
+                        throw;
+                }
+            }
+            catch (Exception) { throw; }
         }
 
         /// <summary>
@@ -151,14 +227,33 @@ namespace Sharpnote
         /// <returns></returns>
         public bool DeleteNote(string key, bool destroy = false)
         {
-            CheckAuthKey();
-            StringParamCheck("key", key);
-
-            var queryParams = string.Format("{0}&key={1}&dead={2}", AuthQsParams, key, destroy ? 1 : 0);
-            using (var resp = ProcessRequest(_settings.DeletePath, "GET", queryParams: queryParams))
+            try
             {
-                return resp == null;
+                CheckAuthKey();
+                StringParamCheck("key", key);
+
+                var queryParams = string.Format("{0}&key={1}&dead={2}", AuthQsParams, key, destroy ? 1 : 0);
+                using (var resp = ProcessRequest(_settings.DeletePath, "GET", queryParams: queryParams))
+                {
+                    return resp == null;
+                }
             }
+            catch (WebException ex)
+            {
+                var resp = (HttpWebResponse)ex.Response;
+                switch (resp.StatusCode)
+                {
+                    //404
+                    case HttpStatusCode.NotFound:
+                        throw new SharpnoteNonExistentNoteException(key, ex);
+                    //401
+                    case HttpStatusCode.Unauthorized:
+                        throw new SharpnoteAuthorisationException(ex);
+                    default:
+                        throw;
+                }
+            }
+            catch (Exception) { throw; }
         }
 
         /// <summary>

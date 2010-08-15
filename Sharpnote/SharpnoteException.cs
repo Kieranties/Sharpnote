@@ -5,7 +5,11 @@ using System.Text;
 
 namespace Sharpnote
 {
-    public class SharpnoteException: Exception  {}
+    public class SharpnoteException : Exception
+    {
+        public SharpnoteException(){}
+        public SharpnoteException(string message , Exception ex) : base(message, ex) { }
+    }
 
     public class SharpnoteAuthorisationException : SharpnoteException
     {
@@ -15,6 +19,11 @@ namespace Sharpnote
             {
                 return "Simplenote authroisation key has expired, is invalid or has not been set.  Re-authenticate the user";
             }
+        }
+
+        public SharpnoteAuthorisationException(Exception ex = null):base(null, ex)
+        {
+
         }
     }
 
@@ -29,9 +38,11 @@ namespace Sharpnote
             }
         }
 
-        public SharpnoteNonExistentNoteException (string key)
+        public SharpnoteNonExistentNoteException (string key, Exception ex = null):base(null, ex)
 	    {
+            
             _key = key;
 	    }
+
     }
 }
