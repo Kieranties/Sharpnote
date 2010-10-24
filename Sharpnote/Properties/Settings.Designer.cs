@@ -34,15 +34,6 @@ namespace Sharpnote.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("/api/note")]
-        public string NotePath {
-            get {
-                return ((string)(this["NotePath"]));
-            }
-        }
-        
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("/api/delete")]
         public string DeletePath {
             get {
@@ -52,7 +43,7 @@ namespace Sharpnote.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("/api/index")]
+        [global::System.Configuration.DefaultSettingValueAttribute("/api2/index")]
         public string IndexPath {
             get {
                 return ((string)(this["IndexPath"]));
@@ -83,6 +74,15 @@ namespace Sharpnote.Properties {
         public string Scheme {
             get {
                 return ((string)(this["Scheme"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("/api2/data")]
+        public string NotePath {
+            get {
+                return ((string)(this["NotePath"]));
             }
         }
     }

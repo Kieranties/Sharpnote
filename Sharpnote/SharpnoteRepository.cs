@@ -14,9 +14,9 @@ namespace Sharpnote
     /// <summary>
     /// Singleton class used to handle all calls to Simplenote
     /// </summary>
-    public sealed class Sharpnote<T> where T: INote, new()
+    public sealed class SharpnoteRepository<T> where T: INote, new()
     {
-        private static readonly Sharpnote<T> _instance = new Sharpnote<T>();
+        private static readonly SharpnoteRepository<T> _instance = new SharpnoteRepository<T>();
         private static readonly Settings _settings = Settings.Default;
         private static string _authToken = string.Empty;
         private static string _email = string.Empty;   
@@ -29,12 +29,12 @@ namespace Sharpnote
             }
         }
 
-        private Sharpnote() { }
+        private SharpnoteRepository() { }
 
         /// <summary>
         /// Instance object for handling communications to Simplenote
         /// </summary>
-        public static Sharpnote<T> Instance
+        public static SharpnoteRepository<T> Instance
         {
             get { return _instance; }
         }
@@ -71,9 +71,8 @@ namespace Sharpnote
         /// <summary>
         /// Saves/Updates the given note to Simplenote
         /// </summary>
-        /// <param name="content">The content of the note to be saved as a plain string</param>
-        /// <param name="key">Optional: The key of the note to update</param>
-        /// <returns>The key of the note if successful</returns>
+        /// <param name="note">The instance of T (an implementation of INote) to be saved</param>
+        /// <returns>A new instance of T with full details of the saved note</returns>
         public T Save(T note)
         {
             try
@@ -104,7 +103,14 @@ namespace Sharpnote
             catch (Exception) { throw; }
         }
 
-        public IEnumerable<T> Get(string length = null, string mark = null, DateTime? since = null)
+        /// <summary>
+        /// Gets the index of notes from Simplenote
+        /// </summary>
+        /// <param name="length">The maximum number of notes to be returned (100 maximum - set as default)</param>
+        /// <param name="mark">The note id marker for the beginning of the next set of notes in the index</param>
+        /// <param name="since">Return notes since a given date</param>
+        /// <returns>A collection of T notes</returns>
+        public IEnumerable<T> Get(int length = 100, string mark = null, DateTimeOffset? since = null)
         {
             return null;
         }

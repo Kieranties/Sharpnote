@@ -5,12 +5,26 @@ using System.Text;
 
 namespace Sharpnote
 {
+    /// <summary>
+    /// Base Exception class for errors thrown by Sharpnote
+    /// </summary>
     public class SharpnoteException : Exception
     {
+        /// <summary>
+        /// Creates an instance of SharpnoteException
+        /// </summary>
         public SharpnoteException(){}
+        /// <summary>
+        /// Creates an instance of SharpnoteException
+        /// </summary>
+        /// <param name="message">The message for the exception</param>
+        /// <param name="ex">A previous exception</param>
         public SharpnoteException(string message , Exception ex) : base(message, ex) { }
     }
 
+    /// <summary>
+    /// Thrown in the event of failing to authorise a user
+    /// </summary>
     public class SharpnoteAuthorisationException : SharpnoteException
     {
         public override string Message
@@ -27,6 +41,9 @@ namespace Sharpnote
         }
     }
 
+    /// <summary>
+    /// Thrown in the event a non existent key is referenced
+    /// </summary>
     public class SharpnoteNonExistentNoteException : SharpnoteException
     {
         private string _key;

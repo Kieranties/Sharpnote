@@ -5,14 +5,11 @@
     <Setting Name="LoginPath" Type="System.String" Scope="Application">
       <Value Profile="(Default)">/api/login</Value>
     </Setting>
-    <Setting Name="NotePath" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">/api/note</Value>
-    </Setting>
     <Setting Name="DeletePath" Type="System.String" Scope="Application">
       <Value Profile="(Default)">/api/delete</Value>
     </Setting>
     <Setting Name="IndexPath" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">/api/index</Value>
+      <Value Profile="(Default)">/api2/index</Value>
     </Setting>
     <Setting Name="SearchPath" Type="System.String" Scope="Application">
       <Value Profile="(Default)">/api/search</Value>
@@ -22,6 +19,9 @@
     </Setting>
     <Setting Name="Scheme" Type="System.String" Scope="Application">
       <Value Profile="(Default)">https://</Value>
+    </Setting>
+    <Setting Name="NotePath" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">/api2/data</Value>
     </Setting>
   </Settings>
 </SettingsFile>
