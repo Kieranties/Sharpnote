@@ -54,7 +54,7 @@ namespace Sharpnote
                 StringParamCheck("password", password);
 
                 var data = string.Format("email={0}&password={1}", email, password);
-                using (var resp = ProcessRequest(_settings.LoginPath, "POST", Encode(data)))
+                using (var resp = ProcessRequest(_settings.LoginPath, "POST", content: Encode(data)))
                 {
                     if (resp != null)
                     {
@@ -78,10 +78,25 @@ namespace Sharpnote
             try
             {
                 var content = JsonConvert.SerializeObject(note);
-                using (var resp = ProcessRequest(_settings.NotePath, "POST", content, _authQsParams))
+                var requestPath = _settings.NotePath;
+                bool updating = false;
+                if (!string.IsNullOrEmpty(note.Key))
+                {
+                    updating = true;
+                    requestPath += "/" + note.Key;
+                }
+
+                using (var resp = ProcessRequest(requestPath, "POST", _authQsParams, content))
                 {
                     var respContent = ReadResponseContent(resp);
                     var respNote = JsonConvert.DeserializeObject<T>(respContent);
+                    if (updating)
+                    {
+                        //if updating note content is only sent back if it has changed
+                        //must populate with saved note content if it is not sent back
+                        if (string.IsNullOrEmpty(respNote.Content))
+                            respNote.Content = note.Content;
+                    }
                     return respNote;
                 }
             }
@@ -110,148 +125,47 @@ namespace Sharpnote
         /// <param name="mark">The note id marker for the beginning of the next set of notes in the index</param>
         /// <param name="since">Return notes since a given date</param>
         /// <returns>A collection of T notes</returns>
-        public IEnumerable<T> Get(int length = 100, string mark = null, DateTimeOffset? since = null)
-        {
-            return null;
-        }
-
-        /// <summary>
-        /// Fetchs the index of notes from Simplenote
-        /// </summary>
-        /// <typeparam name="T">The type of note to return.  Must implement INote and be instantiable</typeparam>
-        /// <returns></returns>
-        //public IEnumerable<T> FetchIndex(bool getDeleted = false)
-        //{
-        //    try
-        //    {                
-        //        using (var resp = ProcessRequest(_settings.IndexPath, "GET", queryParams: _authQsParams))
-        //        {
-        //            var jsonArr = JArray.Parse(ReadResponseContent(resp)).AsEnumerable();
-        //            if (getDeleted) jsonArr = jsonArr.Where(entry => !entry["deleted"].Value<bool>());
-        //            return jsonArr.Select(token => new T
-        //                                  {
-        //                                      Key = token["key"].Value<string>(),
-        //                                      Modified = token["modify"].Value<DateTime>()
-        //                                  });
-        //        }
-        //    }
-        //    catch (WebException ex)
-        //    {
-        //        var resp = (HttpWebResponse)ex.Response;
-        //        switch (resp.StatusCode)
-        //        {
-        //            //401
-        //            case HttpStatusCode.Unauthorized:
-        //                throw new SharpnoteAuthorisationException(ex);
-        //            default:
-        //                throw;
-        //        }
-        //    }
-        //    catch (Exception) { throw; }
-        //}
-
-        /// <summary>
-        /// Fetches the full content of a note
-        /// </summary>
-        /// <typeparam name="T">The type of note to return.  Must implement INote and be instantiable</typeparam>
-        /// <param name="key">The key of the note to retrieve</param>
-        /// <returns>A note of type T</returns>
-        //public T FetchFullNote(string key)
-        //{
-        //    try
-        //    {                
-        //        StringParamCheck("key", key);
-        //        var queryParams = string.Format("{0}&key={1}&encode=base64", _authQsParams, key);
-        //        using (var resp = ProcessRequest(_settings.NotePath, "GET", queryParams: queryParams))
-        //        {
-        //            return new T
-        //            {
-        //                Key = key,
-        //                Content = Decode(ReadResponseContent(resp)),
-        //                Modified = DateTime.Parse(resp.GetResponseHeader("note-modifydate")),
-        //                Created = DateTime.Parse(resp.GetResponseHeader("note-createdate"))
-        //            };
-        //        }
-        //    }
-        //    catch (WebException ex)
-        //    {
-        //        var resp = (HttpWebResponse)ex.Response;
-        //        switch (resp.StatusCode)
-        //        {
-        //            //404
-        //            case HttpStatusCode.NotFound:
-        //                throw new SharpnoteNonExistentNoteException(key, ex);
-        //            //401
-        //            case HttpStatusCode.Unauthorized:
-        //                throw new SharpnoteAuthorisationException(ex);
-        //            default:
-        //                throw;
-        //        }
-        //    }
-        //}
-
-        /// <summary>
-        /// Searches the Simplenote store using the given query
-        /// </summary>
-        /// <typeparam name="T">The type of note to return.  Must implement INote and be instantiable</typeparam>
-        /// <param name="query">The query to search Simplenote</param>
-        /// <param name="max">The maximum number of results (defaults to 10, must be greater than 0)</param>
-        /// <param name="offset">Used for indexing results (defaults to 0, must be greater than -1)</param>
-        /// <returns>A Tuple of an enumerable collection of T and the total results returned</returns>
-        //public Tuple<IEnumerable<T>, int> SearchNotes(string query = null, int max = 10, int offset = 0) 
-        //{
-        //    try
-        //    {                
-        //        if (max < 1) throw new System.ArgumentOutOfRangeException("max", max, "Value must be one or greater");
-        //        if (offset < 0) throw new System.ArgumentOutOfRangeException("offset", offset, "Value must be zero or greater");
-
-        //        var queryParams = string.Format("{0}&query={1}&results={2}&offset={3}", _authQsParams, query, max, offset);
-        //        using (var resp = ProcessRequest(_settings.SearchPath, "GET", queryParams: queryParams))
-        //        {
-        //            var jObj = JObject.Parse(ReadResponseContent(resp));
-        //            var total = jObj["Response"]["totalRecords"].Value<int>();
-        //            var notes = JArray.FromObject(jObj["Response"]["Results"])
-        //                              .Select(token => new T
-        //                              {
-        //                                  Key = token["key"].Value<string>(),
-        //                                  Content = token["content"].Value<string>()
-        //                              });
-
-        //            return new Tuple<IEnumerable<T>, int>(notes, total);
-        //        }
-        //    }
-        //    catch (WebException ex)
-        //    {
-        //        var resp = (HttpWebResponse)ex.Response;
-        //        switch (resp.StatusCode)
-        //        {
-        //            //401
-        //            case HttpStatusCode.Unauthorized:
-        //                throw new SharpnoteAuthorisationException(ex);
-        //            default:
-        //                throw;
-        //        }
-        //    }
-        //    catch (Exception) { throw; }
-        //}
-
-        /// <summary>
-        /// Deletes the given note from Simplenote
-        /// </summary>
-        /// <param name="key">The key of the note to delete</param>
-        /// <param name="destroy">If true, the note is permanently deleted, else the note will be fully removed once the user
-        /// syncs with the iPhone application</param>
-        /// <returns></returns>
-        public bool DeleteNote(string key, bool destroy = false)
+        public INoteEnumerable<T> GetIndex(int length = 100, string mark = null, DateTimeOffset? since = null)
         {
             try
-            {                
-                StringParamCheck("key", key);
-
-                var queryParams = string.Format("{0}&key={1}&dead={2}", _authQsParams, key, destroy ? 1 : 0);
-                using (var resp = ProcessRequest(_settings.DeletePath, "GET", queryParams: queryParams))
+            {
+                var queryParams = string.Format("{0}&length={1}&mark={2}&since={3}", _authQsParams, length, mark, since);
+                using (var resp = ProcessRequest(_settings.IndexPath, "GET", queryParams))
                 {
-                    return resp == null;
+                    var respContent = ReadResponseContent(resp);
+                    var notes = JsonConvert.DeserializeObject<Objects.NoteEnumerable<T>>(respContent);
+                    return notes;
+                }
+            }
+            catch (WebException ex)
+            {
+                var resp = (HttpWebResponse)ex.Response;
+                switch (resp.StatusCode)
+                {
+                    //404
+                    //case HttpStatusCode.NotFound:
+                    //    throw new SharpnoteNonExistentNoteException(note.Key, ex);
+                    //401
+                    case HttpStatusCode.Unauthorized:
+                        throw new SharpnoteAuthorisationException(ex);
+                    default:
+                        throw;
+                }
+            }
+            catch (Exception) { throw; }
+        }
+
+        public T GetNote(string key)
+        {
+            try
+            {
+                StringParamCheck("key", key);
+                var requestPath = string.Format("{0}/{1}", _settings.NotePath, key);
+                using (var resp = ProcessRequest(requestPath , "GET", _authQsParams))
+                {
+                    var respContent = ReadResponseContent(resp);
+                    var respNote = JsonConvert.DeserializeObject<T>(respContent);
+                    return respNote;
                 }
             }
             catch (WebException ex)
@@ -273,6 +187,44 @@ namespace Sharpnote
         }
 
         /// <summary>
+        /// Deletes the given note from Simplenote
+        /// </summary>
+        /// <param name="key">The key of the note to delete</param>
+        /// <param name="destroy">If true, the note is permanently deleted, else the note will be fully removed once the user
+        /// syncs with the iPhone application</param>
+        /// <returns></returns>
+        public bool DeleteNote(T note)
+        {
+            try
+            {
+                //save the note with the delete flag set
+                note.Deleted = true;
+                var edited = Save(note);
+                var requestPath = string.Format("{0}/{1}", _settings.NotePath, note.Key);
+                using (var resp = ProcessRequest(requestPath, "DELETE", _authQsParams))
+                {
+                    return resp == null;
+                }
+            }
+            catch (WebException ex)
+            {
+                var resp = (HttpWebResponse)ex.Response;
+                switch (resp.StatusCode)
+                {
+                    //404
+                    case HttpStatusCode.NotFound:
+                        throw new SharpnoteNonExistentNoteException(note.Key, ex);
+                    //401
+                    case HttpStatusCode.Unauthorized:
+                        throw new SharpnoteAuthorisationException(ex);
+                    default:
+                        throw;
+                }
+            }
+            catch (Exception) { throw; }
+        }
+
+        /// <summary>
         /// Generic method to process a request to Simplenote.
         /// All publicly expose methods which interact with the store are processed though this.
         /// </summary>
@@ -282,7 +234,7 @@ namespace Sharpnote
         /// <param name="queryParams"></param>
         /// <returns></returns>
         private static HttpWebResponse ProcessRequest(string requestPath, string method,
-                                                      string content = null, string queryParams = null)
+                                                      string queryParams = null, string content = null)
         {
             try
             {
@@ -319,18 +271,7 @@ namespace Sharpnote
             var bytes = ASCIIEncoding.UTF8.GetBytes(value);
             return Convert.ToBase64String(bytes);
         }
-
-        /// <summary>
-        /// Helper method to decode a base-64 string
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        //private static string Decode(string value)
-        //{
-        //    var data = Convert.FromBase64String(value);
-        //    return ASCIIEncoding.UTF8.GetString(data);            
-        //}
-
+        
         /// <summary>
         /// Reads the content from the response object
         /// </summary>

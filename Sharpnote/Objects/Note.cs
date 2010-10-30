@@ -15,6 +15,8 @@ namespace Sharpnote
     [JsonObject]
     public class Note: INote
     {
+         [JsonProperty("deleted", NullValueHandling = NullValueHandling.Ignore)]
+        private int? _deleted {get;set;}
         /// <summary>
         /// Note identifier created by Simplenote server
         /// </summary>
@@ -22,9 +24,25 @@ namespace Sharpnote
         public string Key { get; private set; }
         /// <summary>
         /// Whether or not note is in Simplenote trash
-        /// </summary>
-        [JsonProperty("deleted", NullValueHandling = NullValueHandling.Ignore)]
-        public bool? Deleted { get; set; }
+        /// </summary>       
+        [JsonIgnore]
+        public bool? Deleted 
+        {
+            get
+            {
+                if (_deleted.HasValue)
+                    return _deleted == 1;
+
+                return null;
+            }
+            set
+            {
+                if (!value.HasValue) 
+                    _deleted = null;
+
+                _deleted = value.Value ? 1 : 0;
+            }
+        }
         /// <summary>
         /// Last modified date
         /// </summary>
