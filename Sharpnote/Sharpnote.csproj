@@ -45,7 +45,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Enums\SystemTags.cs" />
     <Compile Include="Interfaces\INote.cs" />
     <Compile Include="Interfaces\INoteEnumerable.cs" />
     <Compile Include="Json\DateTimeEpochConverter.cs" />
